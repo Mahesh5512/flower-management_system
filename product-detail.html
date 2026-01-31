@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Detail - BloomFlowers</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1 class="logo">BloomFlowers</h1>
+            <nav>
+                <ul>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="products.html">Products</a></li>
+                    <li><a href="about.html">About</a></li>
+                    <li><a href="contact.html">Contact</a></li>
+                </ul>
+            </nav>
+            <div class="auth-buttons">
+                <button id="wishlistBtn" class="btn">Wishlist</button>
+                <button id="cartBtn" class="btn">Cart <span id="cartCount">0</span></button>
+                <button id="loginBtn" class="btn">Login</button>
+                <button id="registerBtn" class="btn btn-outline">Register</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>User Login</h2>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="loginUsername">Username</label>
+                    <input type="text" id="loginUsername" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Login</button>
+            </form>
+            <div class="switch-form">
+                <p>Not a regular user?</p>
+                <a href="admin-login.html">Admin Login</a> | 
+                <a href="user-login.html">User Login</a>
+                <p>Don't have an account?</p>
+                <a href="user-signup.html">User Signup</a> | 
+                <a href="admin-signup.html">Admin Signup</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div id="registerModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Create an Account</h2>
+            <form id="registerForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="registerFirstName">First Name</label>
+                        <input type="text" id="registerFirstName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerLastName">Last Name</label>
+                        <input type="text" id="registerLastName" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="registerUsername">Username</label>
+                    <input type="text" id="registerUsername" required>
+                </div>
+                <div class="form-group">
+                    <label for="registerEmail">Email</label>
+                    <input type="email" id="registerEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="registerPassword">Password</label>
+                    <input type="password" id="registerPassword" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Register</button>
+            </form>
+            <div class="switch-form">
+                Already have an account? <a href="#" id="switchToLogin">Login here</a>
+            </div>
+        </div>
+    </div>
+
+    <main>
+        <section class="product-detail">
+            <div class="container">
+                <div class="product-detail-container">
+                    <div class="product-detail-image">
+                        <div class="product-image" id="productImage"></div>
+                    </div>
+                    <div class="product-detail-info">
+                        <h2 id="productName"></h2>
+                        <div class="price" id="productPrice"></div>
+                        <div class="product-meta">
+                            <span class="category" id="productCategory"></span>
+                            <span class="id">Product ID: <span id="productId"></span></span>
+                        </div>
+                        <p class="description" id="productDescription"></p>
+                        <div class="product-actions">
+                            <button class="btn btn-outline" id="wishlistButton">
+                                <i class="fas fa-heart"></i> Add to Wishlist
+                            </button>
+                            <button class="btn btn-primary" id="cartButton">
+                                <i class="fas fa-shopping-cart"></i> Add to Cart
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 BloomFlowers. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="utils.js"></script>
+    <script src="script.js"></script>
+    <script>
+        // Get product ID from URL
+        function getProductId() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('id');
+        }
+        
+        // Load product details
+        function loadProductDetails() {
+            const productId = getProductId();
+            if (!productId) {
+                window.location.href = 'products.html';
+                return;
+            }
+            
+            const flowers = JSON.parse(localStorage.getItem('flowers')) || [];
+            const flower = flowers.find(f => f.id == productId);
+            
+            if (!flower) {
+                window.location.href = 'products.html';
+                return;
+            }
+            
+            // Get appropriate flower icon
+            const flowerIcon = getFlowerIcon(flower.category);
+            
+            // Populate product details
+            document.getElementById('productImage').innerHTML = `<i class="${flowerIcon}" style="font-size: 100px; color: #e91e63;"></i>`;
+            document.getElementById('productName').textContent = flower.name;
+            document.getElementById('productPrice').textContent = `₹${parseFloat(flower.price).toFixed(2)}`;
+            document.getElementById('productCategory').textContent = flower.category;
+            document.getElementById('productId').textContent = flower.id;
+            document.getElementById('productDescription').textContent = flower.description;
+            
+            // Set up event listeners
+            document.getElementById('wishlistButton').addEventListener('click', function() {
+                addToWishlist(flower.id);
+            });
+            
+            document.getElementById('cartButton').addEventListener('click', function() {
+                addToCart(flower.id);
+            });
+        }
+        
+        // Function to get appropriate flower icon based on category
+        function getFlowerIcon(category) {
+            const iconMap = {
+                "Rose": "fas fa-rose",
+                "Tulip": "fas fa-seedling",
+                "Sunflower": "fas fa-sun",
+                "Lily": "fas fa-feather-alt",
+                "Orchid": "fas fa-wind",
+                "Daisy": "fas fa-leaf",
+                "Carnation": "fas fa-pagelines",
+                "Peony": "fas fa-spa",
+                "Hydrangea": "fas fa-cloud",
+                "Daffodil": "fas fa-star",
+                "Chrysanthemum": "fas fa-asterisk",
+                "Poppy": "fas fa-apple-alt",
+                "Lavender": "fas fa-air-freshener",
+                "Jasmine": "fas fa-moon",
+                "Gardenia": "fas fa-circle",
+                "Camellia": "fas fa-dot-circle",
+                "Azalea": "fas fa-ring",
+                "Begonia": "fas fa-heart",
+                "Marigold": "fas fa-fire",
+                "Zinnia": "fas fa-splotch",
+                "Cosmos": "fas fa-meteor",
+                "Snapdragon": "fas fa-sort-up",
+                "Foxglove": "fas fa-hand-point-up",
+                "Delphinium": "fas fa-water",
+                "Lisianthus": "fas fa-mountain",
+                "Freesia": "fas fa-wind",
+                "Gladiolus": "fas fa-sword",
+                "Alstroemeria": "fas fa-archway",
+                "Statice": "fas fa-anchor",
+                "Limonium": "fas fa-lemon",
+                "Eucalyptus": "fas fa-tree",
+                "Ranunculus": "fas fa-radiation",
+                "Anemone": "fas fa-wind",
+                "Sweet Pea": "fas fa-peapod",
+                "Stock": "fas fa-align-center",
+                "Celosia": "fas fa-feather",
+                "Buddleia": "fas fa-bug",
+                "Heather": "fas fa-mound",
+                "Protea": "fas fa-egg",
+                "Bird of Paradise": "fas fa-dove",
+                "Calla Lily": "fas fa-shoe-prints",
+                "Gerbera Daisy": "fas fa-dizzy",
+                "Cherry Blossom": "fas fa-chess-pawn",
+                "Magnolia": "fas fa-medal",
+                "Hibiscus": "fas fa-hockey-puck",
+                "default": "fas fa-seedling"
+            };
+            
+            // Return specific icon or default
+            return iconMap[category] || iconMap.default;
+        }
+        
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            loadProductDetails();
+            checkLoginStatus();
+            updateCartCount();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - BloomFlowers</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1 class="logo">BloomFlowers</h1>
+            <nav>
+                <ul>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="products.html">Shop</a></li>
+                    <li><a href="about.html">About</a></li>
+                    <li><a href="contact.html">Contact</a></li>
+                </ul>
+            </nav>
+            <div class="auth-buttons">
+                <button id="logoutBtn" class="btn">Logout</button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section class="admin-dashboard">
+            <div class="container">
+                <div class="dashboard-header">
+                    <h2>Welcome, Administrator 🌸</h2>
+                    <p>Manage your flower shop efficiently</p>
+                </div>
+                
+                <div class="dashboard-stats">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-box"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>128</h3>
+                            <p>Total Products</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-shopping-cart"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>42</h3>
+                            <p>Total Orders</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>126</h3>
+                            <p>Total Users</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>₹2,03,250</h3>
+                            <p>Total Revenue</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="management-sections">
+                    <div class="management-grid">
+                        <div class="management-card">
+                            <div class="card-icon">
+                                <i class="fas fa-plus-circle"></i>
+                            </div>
+                            <h3>Add Product</h3>
+                            <p>Add new flowers to your inventory</p>
+                            <button class="btn btn-outline" onclick="window.location.href='manage-products.html'">Manage</button>
+                        </div>
+                        
+                        <div class="management-card">
+                            <div class="card-icon">
+                                <i class="fas fa-list"></i>
+                            </div>
+                            <h3>View Orders</h3>
+                            <p>Check and manage customer orders</p>
+                            <button class="btn btn-outline" onclick="window.location.href='manage-orders.html'">View</button>
+                        </div>
+                        
+                        <div class="management-card">
+                            <div class="card-icon">
+                                <i class="fas fa-user-cog"></i>
+                            </div>
+                            <h3>Manage Users</h3>
+                            <p>View and manage customer accounts</p>
+                            <button class="btn btn-outline">Manage</button>
+                        </div>
+                        
+                        <div class="management-card">
+                            <div class="card-icon">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <h3>Sales Reports</h3>
+                            <p>View detailed sales analytics</p>
+                            <button class="btn btn-outline">View</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 BloomFlowers. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Check if admin is logged in
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentUser = localStorage.getItem('currentUser');
+            const adminLoggedIn = localStorage.getItem('adminLoggedIn');
+            
+            // Check if user is logged in and has admin role
+            if (!currentUser || !adminLoggedIn) {
+                window.location.href = 'admin-login.html';
+                return;
+            }
+            
+            const userData = JSON.parse(currentUser);
+            if (userData.role !== 'admin') {
+                window.location.href = 'admin-login.html';
+                return;
+            }
+            
+            // Add logout functionality
+            document.getElementById('logoutBtn').addEventListener('click', function() {
+                localStorage.removeItem('currentUser');
+                localStorage.removeItem('adminLoggedIn');
+                window.location.href = 'index.html';
+            });
+        });
+    </script>
+</body>
+</html>

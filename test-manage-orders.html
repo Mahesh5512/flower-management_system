@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Order Management - BloomFlowers</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1 class="logo">BloomFlowers</h1>
+            <nav>
+                <ul>
+                    <li><a href="admin-dashboard.html">Dashboard</a></li>
+                    <li><a href="manage-products.html">Products</a></li>
+                    <li><a href="manage-orders.html" class="active">Orders</a></li>
+                    <li><a href="manage-users.html">Users</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section class="manage-orders">
+            <div class="container">
+                <div class="page-header">
+                    <h2>Test Order Management</h2>
+                </div>
+
+                <div class="orders-list">
+                    <h3>Test Orders</h3>
+                    <div class="order-filters">
+                        <div class="form-group">
+                            <label for="statusFilter">Filter by Status</label>
+                            <select id="statusFilter">
+                                <option value="">All Statuses</option>
+                                <option value="processing">Processing</option>
+                                <option value="packaging">Packaging</option>
+                                <option value="dispatched">Dispatched</option>
+                                <option value="in transit">In Transit</option>
+                                <option value="delivered">Delivered</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="searchInput">Search Orders</label>
+                            <input type="text" id="searchInput" placeholder="Search by order ID or customer name">
+                        </div>
+                    </div>
+                    <div class="orders-table-container">
+                        <table class="orders-table">
+                            <thead>
+                                <tr>
+                                    <th>Order ID</th>
+                                    <th>Customer</th>
+                                    <th>Date</th>
+                                    <th>Items</th>
+                                    <th>Total</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ordersTableBody">
+                                <tr>
+                                    <td colspan="7">Loading test orders...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 BloomFlowers. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Simulate loading orders
+        document.addEventListener('DOMContentLoaded', function() {
+            // Simulate API call delay
+            setTimeout(() => {
+                const testOrders = [
+                    {
+                        id: 'ORD-00000010',
+                        userName: 'Admin User',
+                        orderDate: '2025-11-20T20:02:15.000Z',
+                        items: [{id: 1}, {id: 2}],
+                        totalAmount: '59.98',
+                        status: 'packaging'
+                    },
+                    {
+                        id: 'ORD-00000009',
+                        userName: 'Mahesh khalapure',
+                        orderDate: '2025-11-20T19:59:33.000Z',
+                        items: [{id: 1}],
+                        totalAmount: '2737.27',
+                        status: 'processing'
+                    },
+                    {
+                        id: 'ORD-00000008',
+                        userName: 'Admin User',
+                        orderDate: '2025-11-20T19:57:39.000Z',
+                        items: [{id: 1}, {id: 2}],
+                        totalAmount: '59.98',
+                        status: 'processing'
+                    }
+                ];
+                
+                displayOrders(testOrders);
+            }, 1000);
+        });
+        
+        // Display orders in the table
+        function displayOrders(orders) {
+            const ordersTableBody = document.getElementById('ordersTableBody');
+            
+            if (orders.length === 0) {
+                ordersTableBody.innerHTML = '<tr><td colspan="7">No orders found.</td></tr>';
+                return;
+            }
+            
+            ordersTableBody.innerHTML = '';
+            
+            orders.forEach(order => {
+                const orderDate = new Date(order.orderDate);
+                const formattedDate = orderDate.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                });
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${order.id}</td>
+                    <td>${order.userName}</td>
+                    <td>${formattedDate}</td>
+                    <td>${order.items.length} items</td>
+                    <td>₹${parseFloat(order.totalAmount * 83).toFixed(2)}</td>
+                    <td>
+                        <span class="order-status ${order.status.replace(' ', '-')}">
+                            ${order.status}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn btn-small btn-primary" onclick="alert('Viewing details for order ${order.id}')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="btn btn-small btn-outline" onclick="updateOrderStatus('${order.id}', '${order.status}')">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                    </td>
+                `;
+                ordersTableBody.appendChild(row);
+            });
+        }
+        
+        // Update order status
+        function updateOrderStatus(orderId, currentStatus) {
+            const newStatus = prompt(
+                `Update status for order ${orderId}\n` +
+                `Current status: ${currentStatus}\n\n` +
+                `Enter new status:\n` +
+                `processing, packaging, dispatched, in transit, delivered`,
+                currentStatus
+            );
+            
+            if (newStatus && newStatus !== currentStatus) {
+                // Validate status
+                const validStatuses = ['processing', 'packaging', 'dispatched', 'in transit', 'delivered'];
+                if (!validStatuses.includes(newStatus.toLowerCase())) {
+                    alert('Invalid status. Please enter a valid status.');
+                    return;
+                }
+                
+                // In a real implementation, this would call the API
+                alert(`In a real implementation, this would update order ${orderId} status to ${newStatus} via API.`);
+            }
+        }
+    </script>
+</body>
+</html>

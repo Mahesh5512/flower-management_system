@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Orders - BloomFlowers</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1 class="logo">BloomFlowers</h1>
+            <nav>
+                <ul>
+                    <li><a href="admin-dashboard.html">Dashboard</a></li>
+                    <li><a href="manage-products.html">Products</a></li>
+                    <li><a href="manage-orders.html" class="active">Orders</a></li>
+                    <li><a href="manage-users.html">Users</a></li>
+                </ul>
+            </nav>
+            <div class="auth-buttons">
+                <button id="logoutBtn" class="btn">Logout</button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section class="manage-orders">
+            <div class="container">
+                <div class="page-header">
+                    <h2>Order Management</h2>
+                </div>
+
+                <!-- Orders List -->
+                <div class="orders-list">
+                    <h3>All Orders</h3>
+                    <div class="order-filters">
+                        <div class="form-group">
+                            <label for="statusFilter">Filter by Status</label>
+                            <select id="statusFilter">
+                                <option value="">All Statuses</option>
+                                <option value="processing">Processing</option>
+                                <option value="packaging">Packaging</option>
+                                <option value="dispatched">Dispatched</option>
+                                <option value="in transit">In Transit</option>
+                                <option value="delivered">Delivered</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="searchInput">Search Orders</label>
+                            <input type="text" id="searchInput" placeholder="Search by order ID or customer name">
+                        </div>
+                    </div>
+                    <div class="orders-table-container">
+                        <table class="orders-table">
+                            <thead>
+                                <tr>
+                                    <th>Order ID</th>
+                                    <th>Customer</th>
+                                    <th>Date</th>
+                                    <th>Items</th>
+                                    <th>Total</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ordersTableBody">
+                                <!-- Orders will be loaded here dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Order Details Modal -->
+    <div id="orderModal" class="modal">
+        <div class="modal-content order-details-modal">
+            <span class="close">&times;</span>
+            <div id="orderDetailsContent">
+                <!-- Order details will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 BloomFlowers. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Check if admin is logged in
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentUser = localStorage.getItem('currentUser');
+            const adminLoggedIn = localStorage.getItem('adminLoggedIn');
+            
+            // Check if user is logged in and has admin role
+            if (!currentUser || !adminLoggedIn) {
+                window.location.href = 'admin-login.html';
+                return;
+            }
+            
+            const userData = JSON.parse(currentUser);
+            if (userData.role !== 'admin') {
+                window.location.href = 'admin-login.html';
+                return;
+            }
+            
+            // Initialize the page
+            loadOrders();
+            
+            // Add event listeners
+            document.getElementById('logoutBtn').addEventListener('click', function() {
+                localStorage.removeItem('currentUser');
+                localStorage.removeItem('adminLoggedIn');
+                window.location.href = 'index.html';
+            });
+            
+            // Filter and search event listeners
+            document.getElementById('statusFilter').addEventListener('change', loadOrders);
+            document.getElementById('searchInput').addEventListener('input', loadOrders);
+            
+            // Modal event listeners
+            document.querySelector('.close').addEventListener('click', function() {
+                document.getElementById('orderModal').style.display = 'none';
+            });
+            
+            window.addEventListener('click', function(event) {
+                const modal = document.getElementById('orderModal');
+                if (event.target == modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        });
+        
+        // Load orders for admin view
+        function loadOrders() {
+            const ordersTableBody = document.getElementById('ordersTableBody');
+            ordersTableBody.innerHTML = '<tr><td colspan="7">Loading orders...</td></tr>';
+            
+            // Get filter values
+            const statusFilter = document.getElementById('statusFilter').value;
+            const searchInput = document.getElementById('searchInput').value.toLowerCase();
+            
+            // Fetch orders from API
+            fetch('http://localhost:3000/api/orders')
+            .then(response => response.json())
+            .then(orders => {
+                // Apply filters
+                let filteredOrders = orders;
+                
+                if (statusFilter) {
+                    filteredOrders = filteredOrders.filter(order => order.status === statusFilter);
+                }
+                
+                if (searchInput) {
+                    filteredOrders = filteredOrders.filter(order => 
+                        order.id.toLowerCase().includes(searchInput) ||
+                        order.userName.toLowerCase().includes(searchInput)
+                    );
+                }
+                
+                // Display orders
+                displayOrders(filteredOrders);
+            })
+            .catch(error => {
+                console.error('Error loading orders:', error);
+                ordersTableBody.innerHTML = '<tr><td colspan="7">Error loading orders. Please try again.</td></tr>';
+            });
+        }
+        
+        // Display orders in the table
+        function displayOrders(orders) {
+            const ordersTableBody = document.getElementById('ordersTableBody');
+            
+            if (orders.length === 0) {
+                ordersTableBody.innerHTML = '<tr><td colspan="7">No orders found.</td></tr>';
+                return;
+            }
+            
+            ordersTableBody.innerHTML = '';
+            
+            orders.forEach(order => {
+                const orderDate = new Date(order.orderDate);
+                const formattedDate = orderDate.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                });
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${order.id}</td>
+                    <td>${order.userName}</td>
+                    <td>${formattedDate}</td>
+                    <td>${order.items ? order.items.length : 0} items</td>
+                    <td>$${parseFloat(order.totalAmount).toFixed(2)}</td>
+                    <td>
+                        <span class="order-status ${order.status.replace(' ', '-')}">
+                            ${order.status}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn btn-small btn-primary" onclick="viewOrderDetails('${order.id}')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="btn btn-small btn-outline" onclick="showUpdateStatusForm('${order.id}', '${order.status}')">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                    </td>
+                `;
+                ordersTableBody.appendChild(row);
+            });
+        }
+        
+        // View order details
+        function viewOrderDetails(orderId) {
+            fetch(`http://localhost:3000/api/orders/${orderId}`)
+            .then(response => response.json())
+            .then(order => {
+                displayOrderDetails(order);
+                document.getElementById('orderModal').style.display = 'block';
+            })
+            .catch(error => {
+                console.error('Error fetching order details:', error);
+                alert('Error fetching order details. Please try again.');
+            });
+        }
+        
+        // Display order details in modal
+        function displayOrderDetails(order) {
+            const orderDetailsContent = document.getElementById('orderDetailsContent');
+            
+            // Parse shipping address if it's a string
+            let shippingAddress = order.shippingAddress;
+            if (typeof shippingAddress === 'string') {
+                try {
+                    shippingAddress = JSON.parse(shippingAddress);
+                } catch (e) {
+                    shippingAddress = {};
+                }
+            }
+            
+            // Format order date
+            const orderDate = new Date(order.orderDate);
+            const formattedDate = orderDate.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            // Format delivery date (using status for now)
+            const deliveryDate = 'Processing'; // This would be calculated based on business logic
+            
+            // Generate items HTML
+            let itemsHtml = '';
+            if (order.items && order.items.length > 0) {
+                order.items.forEach(item => {
+                    const itemTotal = item.price * item.quantity;
+                    itemsHtml += `
+                        <div class="order-item">
+                            <div class="item-info">
+                                <div>
+                                    <h4>${item.productName}</h4>
+                                    <p>Quantity: ${item.quantity}</p>
+                                </div>
+                            </div>
+                            <div class="item-price">$${parseFloat(itemTotal).toFixed(2)}</div>
+                        </div>
+                    `;
+                });
+            } else {
+                itemsHtml = '<p>No items found for this order.</p>';
+            }
+            
+            orderDetailsContent.innerHTML = `
+                <div class="order-details-header">
+                    <h2>Order Details - ${order.id}</h2>
+                    <button class="btn btn-outline" onclick="showUpdateStatusForm('${order.id}', '${order.status}')">
+                        Update Status
+                    </button>
+                </div>
+                
+                <div class="order-info-grid">
+                    <div class="order-info-section">
+                        <h4>Customer Information</h4>
+                        <p><strong>Name:</strong> ${order.userName}</p>
+                        <p><strong>Email:</strong> ${order.userEmail}</p>
+                    </div>
+                    
+                    <div class="order-info-section">
+                        <h4>Shipping Address</h4>
+                        <p>${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}</p>
+                        <p>${shippingAddress.address || ''}</p>
+                        <p>${shippingAddress.city || ''}, ${shippingAddress.zipCode || ''}</p>
+                    </div>
+                    
+                    <div class="order-info-section">
+                        <h4>Order Information</h4>
+                        <p><strong>Order Date:</strong> ${formattedDate}</p>
+                        <p><strong>Status:</strong> 
+                            <span class="order-status ${order.status.replace(' ', '-')}">
+                                ${order.status}
+                            </span>
+                        </p>
+                        <p><strong>Estimated Delivery:</strong> ${deliveryDate}</p>
+                    </div>
+                </div>
+                
+                <div class="order-items">
+                    <h4>Items in this order:</h4>
+                    ${itemsHtml}
+                </div>
+                
+                <div class="order-totals">
+                    <div class="summary-item">
+                        <strong>Total: $${parseFloat(order.totalAmount).toFixed(2)}</strong>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Show update status form
+        function showUpdateStatusForm(orderId, currentStatus) {
+            const newStatus = prompt(
+                `Update status for order ${orderId}\n` +
+                `Current status: ${currentStatus}\n\n` +
+                `Enter new status:\n` +
+                `processing, packaging, dispatched, in transit, delivered`,
+                currentStatus
+            );
+            
+            if (newStatus && newStatus !== currentStatus) {
+                // Validate status
+                const validStatuses = ['processing', 'packaging', 'dispatched', 'in transit', 'delivered'];
+                if (!validStatuses.includes(newStatus.toLowerCase())) {
+                    alert('Invalid status. Please enter a valid status.');
+                    return;
+                }
+                
+                updateOrderStatus(orderId, newStatus.toLowerCase());
+            }
+        }
+        
+        // Update order status
+        function updateOrderStatus(orderId, newStatus) {
+            fetch(`http://localhost:3000/api/orders/${orderId}/status`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ status: newStatus })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to update order status');
+                }
+                return response.json();
+            })
+            .then(updatedOrder => {
+                // Close modal if open
+                document.getElementById('orderModal').style.display = 'none';
+                
+                // Reload orders
+                loadOrders();
+                
+                // Show success message
+                alert(`Order ${orderId} status updated to ${newStatus} successfully!`);
+            })
+            .catch(error => {
+                console.error('Error updating order status:', error);
+                alert('Error updating order status. Please try again.');
+            });
+        }
+    </script>
+</body>
+</html>

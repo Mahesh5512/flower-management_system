@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Signup - BloomFlowers</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1 class="logo">BloomFlowers</h1>
+            <nav>
+                <ul>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="products.html">Shop</a></li>
+                    <li><a href="about.html">About</a></li>
+                    <li><a href="contact.html">Contact</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section class="admin-signup">
+            <div class="container">
+                <div class="signup-card">
+                    <div class="signup-header">
+                        <i class="fas fa-user-shield admin-icon"></i>
+                        <h2>Admin Account Creation</h2>
+                        <p>Create a new administrator account</p>
+                    </div>
+                    
+                    <form id="adminSignupForm">
+                        <div class="form-group">
+                            <label for="adminName">Full Name</label>
+                            <input type="text" id="adminName" placeholder="Enter administrator's full name" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="adminEmail">Email</label>
+                            <input type="email" id="adminEmail" placeholder="Enter administrator's email" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="adminUsername">Username</label>
+                            <input type="text" id="adminUsername" placeholder="Choose a username" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="adminPassword">Password</label>
+                            <input type="password" id="adminPassword" placeholder="Enter a strong password" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="adminConfirmPassword">Confirm Password</label>
+                            <input type="password" id="adminConfirmPassword" placeholder="Confirm your password" required>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">Create Admin Account</button>
+                    </form>
+                    
+                    <div class="signup-footer">
+                        <p>Already have an account? <a href="admin-login.html">Login here</a></p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 BloomFlowers. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Include the API script -->
+    <script src="backend/api.js"></script>
+    <script>
+        // Handle admin signup
+        document.getElementById('adminSignupForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('adminName').value;
+            const email = document.getElementById('adminEmail').value;
+            const username = document.getElementById('adminUsername').value;
+            const password = document.getElementById('adminPassword').value;
+            const confirmPassword = document.getElementById('adminConfirmPassword').value;
+            
+            // Validation
+            if (!name || !email || !username || !password || !confirmPassword) {
+                alert('Please fill in all fields');
+                return;
+            }
+            
+            if (password.length < 6) {
+                alert('Password must be at least 6 characters long');
+                return;
+            }
+            
+            if (password !== confirmPassword) {
+                alert('Passwords do not match');
+                return;
+            }
+            
+            // Prepare user data for API (admin role will be set on backend)
+            const userData = {
+                firstName: name.split(' ')[0],
+                lastName: name.split(' ').slice(1).join(' '),
+                email: email,
+                username: username,
+                password: password
+            };
+            
+            // Send user data to backend API
+            fetch('http://localhost:3000/api/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(userData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    if (response.status === 409) {
+                        throw new Error('Username or email already exists');
+                    } else {
+                        throw new Error('Failed to create account');
+                    }
+                }
+                return response.json();
+            })
+            .then(user => {
+                alert('Administrator account created successfully! Please login.');
+                window.location.href = 'admin-login.html';
+            })
+            .catch(error => {
+                console.error('Error creating account:', error);
+                if (error.message === 'Username or email already exists') {
+                    alert('This username or email is already taken');
+                } else {
+                    alert('Failed to create account. Please try again.');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

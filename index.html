@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BloomFlowers - Online Flower Shop</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1 class="logo">BloomFlowers</h1>
+            <nav>
+                <ul>
+                    <li><a href="index.html" class="active">Home</a></li>
+                    <li><a href="products.html">Shop</a></li>
+                    <li><a href="about.html">About</a></li>
+                    <li><a href="contact.html">Contact</a></li>
+                </ul>
+            </nav>
+            <div class="auth-buttons">
+                <div class="admin-dropdown">
+                    <button class="admin-icon-btn">
+                        <i class="fas fa-user-shield"></i>
+                    </button>
+                    <div class="admin-dropdown-content">
+                        <a href="admin-login.html">Admin Login</a>
+                        <a href="admin-signup.html">Admin Signup</a>
+                        <a href="user-login.html">User Login</a>
+                        <a href="user-signup.html">User Signup</a>
+                        <a href="admin-dashboard.html" id="adminDashboardLink" style="display: none;">Admin Dashboard</a>
+                    </div>
+                </div>
+                <button id="cartBtn" class="btn">Cart <span id="cartCount">0</span></button>
+                <button id="loginBtn" class="btn">Login</button>
+                <button id="registerBtn" class="btn">Register</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>User Login</h2>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="loginUsername">Username</label>
+                    <input type="text" id="loginUsername" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Login</button>
+            </form>
+            <div class="switch-form">
+                <p>Not a regular user?</p>
+                <a href="admin-login.html">Admin Login</a> | 
+                <a href="user-login.html">User Login</a>
+                <p>Don't have an account?</p>
+                <a href="user-signup.html">User Signup</a> | 
+                <a href="admin-signup.html">Admin Signup</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div id="registerModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Create an Account</h2>
+            <form id="registerForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="registerFirstName">First Name</label>
+                        <input type="text" id="registerFirstName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerLastName">Last Name</label>
+                        <input type="text" id="registerLastName" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="registerUsername">Username</label>
+                    <input type="text" id="registerUsername" required>
+                </div>
+                <div class="form-group">
+                    <label for="registerEmail">Email</label>
+                    <input type="email" id="registerEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="registerPassword">Password</label>
+                    <input type="password" id="registerPassword" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Register</button>
+            </form>
+            <div class="switch-form">
+                Already have an account? <a href="#" id="switchToLogin">Login here</a>
+            </div>
+        </div>
+    </div>
+
+    <main>
+        <section class="hero">
+            <div class="container">
+                <h2>Beautiful Flowers for Every Occasion</h2>
+                <p>Discover our exquisite collection of fresh flowers delivered to your doorstep</p>
+                <button class="btn btn-primary">Shop Now</button>
+            </div>
+        </section>
+
+        <section class="featured-products">
+            <div class="container">
+                <h2>Featured Flowers</h2>
+                <div class="search-filter">
+                    <input type="text" id="searchInput" placeholder="Search flowers...">
+                    <select id="categoryFilter">
+                        <option value="">All Categories</option>
+                        <option value="Rose">Roses</option>
+                        <option value="Tulip">Tulips</option>
+                        <option value="Sunflower">Sunflowers</option>
+                        <option value="Lily">Lilies</option>
+                        <option value="Orchid">Orchids</option>
+                        <option value="Daisy">Daisies</option>
+                        <option value="Carnation">Carnations</option>
+                        <option value="Peony">Peonies</option>
+                    </select>
+                    <select id="sortOrder">
+                        <option value="name">Sort by Name</option>
+                        <option value="price-low">Price: Low to High</option>
+                        <option value="price-high">Price: High to Low</option>
+                    </select>
+                </div>
+                <div class="product-grid" id="productGrid">
+                    <!-- Products will be loaded here dynamically -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 BloomFlowers. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="utils.js"></script>
+    <script src="backend/api.js"></script>
+    <script src="script.js"></script>
+    <script>
+        // Check admin login status and show appropriate link
+        document.addEventListener('DOMContentLoaded', function() {
+            const adminDashboardLink = document.getElementById('adminDashboardLink');
+            const currentUser = localStorage.getItem('currentUser');
+            
+            if (currentUser) {
+                const userData = JSON.parse(currentUser);
+                // Check if user has admin role
+                if (userData.role === 'admin') {
+                    adminDashboardLink.style.display = 'block';
+                }
+            }
+            
+            // Admin dropdown functionality
+            const adminIconBtn = document.querySelector('.admin-icon-btn');
+            const adminDropdownContent = document.querySelector('.admin-dropdown-content');
+            
+            adminIconBtn.addEventListener('click', function() {
+                adminDropdownContent.classList.toggle('show');
+            });
+            
+            // Close dropdown when clicking outside
+            window.addEventListener('click', function(event) {
+                if (!event.target.matches('.admin-icon-btn') && !event.target.closest('.admin-dropdown')) {
+                    adminDropdownContent.classList.remove('show');
+                }
+            });
+            
+            // Enable register modal
+            const registerBtn = document.getElementById('registerBtn');
+            if (registerBtn) {
+                registerBtn.style.display = 'inline-block';
+            }
+            
+            // Add event listeners for filters
+            document.getElementById('searchInput').addEventListener('input', function() {
+                displayProducts();
+            });
+            document.getElementById('categoryFilter').addEventListener('change', function() {
+                displayProducts();
+            });
+            document.getElementById('sortOrder').addEventListener('change', function() {
+                displayProducts();
+            });
+        });
+    </script>
+</body>
+</html>

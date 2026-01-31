@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Track Order - BloomFlowers</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1 class="logo">BloomFlowers</h1>
+            <nav>
+                <ul>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="products.html">Products</a></li>
+                    <li><a href="about.html">About</a></li>
+                    <li><a href="contact.html">Contact</a></li>
+                </ul>
+            </nav>
+            <div class="auth-buttons">
+                <button id="dashboardBtn" class="btn">Dashboard</button>
+                <button id="logoutBtn" class="btn">Logout</button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section class="track-order-page">
+            <div class="container">
+                <h2>Track Your Order</h2>
+                
+                <div class="track-order-content">
+                    <div class="track-form">
+                        <h3>Track Your Order</h3>
+                        <form id="trackForm">
+                            <div class="form-group">
+                                <label for="orderId">Order ID</label>
+                                <input type="text" id="orderId" placeholder="e.g. ORD-12345678 or 12345678">
+                            </div>
+                            <button type="submit" class="btn btn-primary">Track Order</button>
+                        </form>
+                        
+                        <div class="track-instructions">
+                            <h4>How to Track Your Order</h4>
+                            <ul>
+                                <li>Find your Order ID in your order confirmation email</li>
+                                <li>Order IDs follow the format: <strong>ORD-XXXXXXXX</strong></li>
+                                <li>You can also use just the number: <strong>XXXXXXXX</strong></li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="track-result" id="trackResult">
+                        <!-- Tracking results will be displayed here -->
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 BloomFlowers. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="utils.js"></script>
+    <!-- Include the API script -->
+    <script src="backend/api.js"></script>
+    <script>
+        // Check if user is logged in
+        function checkLoginStatus() {
+            const user = localStorage.getItem('currentUser');
+            
+            if (!user) {
+                // Redirect to home page if not logged in
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            // Add event listeners
+            document.getElementById('dashboardBtn').addEventListener('click', () => {
+                window.location.href = 'dashboard.html';
+            });
+            
+            document.getElementById('logoutBtn').addEventListener('click', function() {
+                localStorage.removeItem('currentUser');
+                window.location.href = 'index.html';
+            });
+            
+            // Check if we're tracking a specific order
+            // Get order ID from URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            const trackOrderId = urlParams.get('orderId');
+            if (trackOrderId) {
+                // Track the specific order
+                trackOrderById(trackOrderId);
+            }
+            
+            // Add event listener for track form
+            document.getElementById('trackForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const orderId = document.getElementById('orderId').value.trim();
+                
+                if (orderId) {
+                    trackOrderById(orderId);
+                } else {
+                    alert('Please enter your Order ID');
+                }
+            });
+        }
+        
+        // Track order by order ID
+        function trackOrderById(orderId) {
+            // Show loading message
+            document.getElementById('trackResult').innerHTML = '<p>Tracking your order...</p>';
+            
+            // Handle both formatted (ORD-XXXXXXXX) and unformatted IDs
+            let searchId = orderId;
+            if (!orderId.startsWith('ORD-')) {
+                searchId = 'ORD-' + orderId.padStart(8, '0');
+            }
+            
+            // Fetch order from backend API
+            fetch(`http://localhost:3000/api/orders/${searchId}`)
+            .then(response => {
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        throw new Error('Order not found');
+                    } else {
+                        throw new Error('Failed to fetch order');
+                    }
+                }
+                return response.json();
+            })
+            .then(order => {
+                displayTrackingResult(order);
+            })
+            .catch(error => {
+                console.error('Error tracking order:', error);
+                if (error.message === 'Order not found') {
+                    document.getElementById('trackResult').innerHTML = `
+                        <div class="track-error">
+                            <h3>Order Not Found</h3>
+                            <p>We couldn't find an order with ID: <strong>${orderId}</strong></p>
+                            <p>Please check the order ID and try again.</p>
+                            <p><strong>Note:</strong> Order IDs can be entered as ORD-XXXXXXXX or just XXXXXXXX</p>
+                        </div>
+                    `;
+                } else {
+                    document.getElementById('trackResult').innerHTML = `
+                        <div class="track-error">
+                            <h3>Error Tracking Order</h3>
+                            <p>There was an error retrieving your order information. Please try again later.</p>
+                        </div>
+                    `;
+                }
+            });
+        }
+        
+        // Display tracking result
+        function displayTrackingResult(order) {
+            const trackResult = document.getElementById('trackResult');
+            
+            // Parse shipping address if it's a string
+            let shippingAddress = order.shippingAddress;
+            if (typeof shippingAddress === 'string') {
+                try {
+                    shippingAddress = JSON.parse(shippingAddress);
+                } catch (e) {
+                    shippingAddress = {};
+                }
+            }
+            
+            // Determine currency symbol (now using INR)
+            const currencySymbol = '₹';
+            
+            // Format order date
+            const orderDate = new Date(order.orderDate);
+            const formattedOrderDate = orderDate.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+            
+            // Format delivery date (using status for now)
+            const deliveryDate = 'Processing'; // This would be calculated based on business logic
+            
+            // Get current status
+            const currentStatus = order.status || 'Processing';
+            
+            // Handle different order structures
+            let items = order.items || order.products || [];
+            
+            let itemsHtml = '';
+            if (items && items.length > 0) {
+                items.forEach(item => {
+                    // Use a flower icon instead of images
+                    const flowerIcon = getFlowerIcon(item.category || "default");
+                    const itemTotal = item.price * item.quantity * 83; // Convert to INR
+                    itemsHtml += `
+                        <div class="order-item">
+                            <div class="item-info">
+                                <div>
+                                    <i class="${flowerIcon}" style="margin-right: 5px; color: #e91e63;"></i>
+                                    <h4>${item.productName}</h4>
+                                    <p>Quantity: ${item.quantity}</p>
+                                </div>
+                            </div>
+                            <div class="item-price">${currencySymbol}${parseFloat(itemTotal).toFixed(2)}</div>
+                        </div>
+                    `;
+                });
+            } else {
+                itemsHtml = '<p>No items found for this order.</p>';
+            }
+            
+            trackResult.innerHTML = `
+                <div class="track-success">
+                    <div class="order-header">
+                        <h3>Order Details</h3>
+                        <div class="order-id">Order #${order.id}</div>
+                    </div>
+                    
+                    <div class="order-info">
+                        <div class="info-section">
+                            <h4>Order Information</h4>
+                            <p><strong>Date:</strong> ${formattedOrderDate}</p>
+                            <p><strong>Status:</strong> 
+                                <span class="order-status ${currentStatus.toLowerCase().replace(' ', '-')}">
+                                    ${currentStatus}
+                                </span>
+                            </p>
+                            <p><strong>Estimated Delivery:</strong> ${deliveryDate}</p>
+                        </div>
+                        
+                        <div class="info-section">
+                            <h4>Shipping Address</h4>
+                            <p>${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}</p>
+                            <p>${shippingAddress.address || ''}</p>
+                            <p>${shippingAddress.city || ''}, ${shippingAddress.zipCode || ''}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="order-items">
+                        <h4>Items in this order:</h4>
+                        ${itemsHtml}
+                    </div>
+                    
+                    <div class="order-totals">
+                        <div class="summary-item">
+                            <strong>Total: ${currencySymbol}${parseFloat(order.totalAmount * 83).toFixed(2)}</strong>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Function to get appropriate flower icon based on category
+        function getFlowerIcon(category) {
+            const iconMap = {
+                "Rose": "fas fa-rose",
+                "Tulip": "fas fa-seedling",
+                "Sunflower": "fas fa-sun",
+                "Lily": "fas fa-feather-alt",
+                "Orchid": "fas fa-wind",
+                "Daisy": "fas fa-leaf",
+                "Carnation": "fas fa-pagelines",
+                "Peony": "fas fa-spa",
+                "Hydrangea": "fas fa-cloud",
+                "Daffodil": "fas fa-star",
+                "Chrysanthemum": "fas fa-asterisk",
+                "Poppy": "fas fa-apple-alt",
+                "Lavender": "fas fa-air-freshener",
+                "Jasmine": "fas fa-moon",
+                "Gardenia": "fas fa-circle",
+                "Camellia": "fas fa-dot-circle",
+                "Azalea": "fas fa-ring",
+                "Begonia": "fas fa-heart",
+                "Marigold": "fas fa-fire",
+                "Zinnia": "fas fa-splotch",
+                "Cosmos": "fas fa-meteor",
+                "Snapdragon": "fas fa-sort-up",
+                "Foxglove": "fas fa-hand-point-up",
+                "Delphinium": "fas fa-water",
+                "Lisianthus": "fas fa-mountain",
+                "Freesia": "fas fa-wind",
+                "Gladiolus": "fas fa-sword",
+                "Alstroemeria": "fas fa-archway",
+                "Statice": "fas fa-anchor",
+                "Limonium": "fas fa-lemon",
+                "Eucalyptus": "fas fa-tree",
+                "Ranunculus": "fas fa-radiation",
+                "Anemone": "fas fa-wind",
+                "Sweet Pea": "fas fa-peapod",
+                "Stock": "fas fa-align-center",
+                "Celosia": "fas fa-feather",
+                "Buddleia": "fas fa-bug",
+                "Heather": "fas fa-mound",
+                "Protea": "fas fa-egg",
+                "Bird of Paradise": "fas fa-dove",
+                "Calla Lily": "fas fa-shoe-prints",
+                "Gerbera Daisy": "fas fa-dizzy",
+                "Cherry Blossom": "fas fa-chess-pawn",
+                "Magnolia": "fas fa-medal",
+                "Hibiscus": "fas fa-hockey-puck",
+                "default": "fas fa-seedling"
+            };
+            
+            // Return specific icon or default
+            return iconMap[category] || iconMap.default;
+        }
+        
+        // Run when DOM is loaded
+        document.addEventListener('DOMContentLoaded', checkLoginStatus);
+    </script>
+</body>
+</html>

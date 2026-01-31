@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Checkout Functionality</title>
+</head>
+<body>
+    <h1>Test Checkout Functionality</h1>
+    <button id="testBtn">Test Place Order</button>
+    
+    <script>
+        // Simulate localStorage data
+        const testUser = {
+            id: 2,
+            username: "user1",
+            email: "user1@example.com",
+            firstName: "John",
+            lastName: "Doe",
+            role: "user"
+        };
+        
+        const testCart = [
+            {
+                id: 1,
+                name: "Red Roses",
+                price: "2489.17",
+                image: "🌹",
+                quantity: 1
+            }
+        ];
+        
+        localStorage.setItem('currentUser', JSON.stringify(testUser));
+        localStorage.setItem('cart', JSON.stringify(testCart));
+        
+        console.log('Test data set in localStorage');
+        
+        // Test the place order function directly
+        function testPlaceOrder() {
+            console.log('Testing place order function');
+            
+            // Simulate form data
+            const firstName = "John";
+            const lastName = "Doe";
+            const email = "user1@example.com";
+            const address = "123 Main St";
+            const city = "New York";
+            const zipCode = "10001";
+            const currency = "INR";
+            const currencySymbol = "₹";
+            const paymentMethod = "PhonePe";
+            const paymentDetails = "PhonePe: 9876543210";
+            
+            // Get current user and cart
+            const userStr = localStorage.getItem('currentUser');
+            const cartStr = localStorage.getItem('cart');
+            
+            console.log('User data:', userStr);
+            console.log('Cart data:', cartStr);
+            
+            if (!userStr) {
+                console.error('User not logged in');
+                return;
+            }
+            
+            const user = JSON.parse(userStr);
+            const cart = JSON.parse(cartStr) || [];
+            
+            if (cart.length === 0) {
+                console.error('Cart is empty');
+                return;
+            }
+            
+            console.log('Parsed user:', user);
+            console.log('Parsed cart:', cart);
+            
+            // Calculate total (simulate)
+            const total = "2986.04"; // Subtotal + tax + shipping
+            
+            // Calculate estimated delivery date (3-5 business days from today)
+            const deliveryDate = new Date();
+            deliveryDate.setDate(deliveryDate.getDate() + 3 + Math.floor(Math.random() * 3));
+            
+            // Prepare order data for API
+            const orderData = {
+                userId: user.id,
+                userName: `${user.firstName} ${user.lastName}`,
+                userEmail: user.email,
+                products: cart.map(item => ({
+                    productId: item.id,
+                    productName: item.name,
+                    quantity: parseInt(item.quantity),
+                    price: parseFloat(item.price)
+                })),
+                totalAmount: parseFloat(total),
+                shippingAddress: {
+                    firstName: firstName,
+                    lastName: lastName,
+                    address: address,
+                    city: city,
+                    zipCode: zipCode
+                }
+            };
+            
+            console.log('Sending order data to backend:', orderData);
+            
+            // Send order to backend API
+            fetch('http://localhost:3000/api/orders', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(orderData)
+            })
+            .then(response => {
+                console.log('Response received:', response.status, response.statusText);
+                if (!response.ok) {
+                    return response.json().then(err => {
+                        throw new Error(err.error || 'Failed to place order');
+                    });
+                }
+                return response.json();
+            })
+            .then(order => {
+                console.log('Order created successfully:', order);
+                
+                // Clear cart
+                localStorage.removeItem('cart');
+                
+                // Save order details for confirmation page
+                localStorage.setItem('lastOrder', JSON.stringify({
+                    id: order.id || order.orderReference,
+                    userId: user.id,
+                    items: cart,
+                    total: `${currencySymbol}${parseFloat(total).toFixed(2)}`,
+                    currency: currency,
+                    paymentMethod: paymentMethod,
+                    paymentDetails: paymentDetails,
+                    shippingAddress: {
+                        firstName: firstName,
+                        lastName: lastName,
+                        address: address,
+                        city: city,
+                        zipCode: zipCode
+                    },
+                    date: new Date(order.orderDate || new Date()).toLocaleString(),
+                    status: order.status || 'processing',
+                    deliveryDate: deliveryDate
+                }));
+                
+                console.log('Order details saved to localStorage');
+            })
+            .catch(error => {
+                console.error('Error placing order:', error);
+                alert(`Failed to place order: ${error.message}. Please try again.`);
+            });
+        }
+        
+        // Add event listener
+        document.getElementById('testBtn').addEventListener('click', testPlaceOrder);
+    </script>
+</body>
+</html>

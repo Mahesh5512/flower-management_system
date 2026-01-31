@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Order History</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Test Order History</h1>
+        <div id="orderHistory">
+            <!-- Order history will be loaded here dynamically -->
+        </div>
+    </div>
+
+    <script>
+        // Test user data
+        const testUser = {
+            id: 1,
+            username: "admin",
+            email: "admin@bloomflowers.com"
+        };
+
+        // Save test user to localStorage
+        localStorage.setItem('currentUser', JSON.stringify(testUser));
+
+        // Function to load order history
+        function loadOrderHistory() {
+            const user = JSON.parse(localStorage.getItem('currentUser'));
+            const orderHistory = document.getElementById('orderHistory');
+            
+            // Show loading message
+            orderHistory.innerHTML = '<p>Loading order history...</p>';
+            
+            // Get orders from localStorage
+            const allOrders = JSON.parse(localStorage.getItem('orders')) || [];
+            
+            // Filter orders for current user
+            const userOrders = allOrders.filter(order => order.userId == user.id);
+            
+            if (userOrders.length === 0) {
+                orderHistory.innerHTML = '<p>You have no order history yet.</p>';
+                return;
+            }
+            
+            let ordersHtml = '';
+            userOrders.forEach(order => {
+                // Parse shipping address if it's a string
+                let shippingAddress = order.shippingAddress;
+                if (typeof shippingAddress === 'string') {
+                    try {
+                        shippingAddress = JSON.parse(shippingAddress);
+                    } catch (e) {
+                        shippingAddress = {};
+                    }
+                }
+                
+                // Create items HTML
+                let itemsHtml = '';
+                if (order.items && order.items.length > 0) {
+                    order.items.forEach(item => {
+                        itemsHtml += `<div class="order-item-mini">${item.productName} (x${item.quantity}) - $${(item.price * item.quantity).toFixed(2)}</div>`;
+                    });
+                } else {
+                    itemsHtml = '<div class="order-item-mini">Order items (view details in order confirmation)</div>';
+                }
+                
+                // Determine currency symbol (assuming USD by default)
+                const currencySymbol = '$';
+                
+                // Format order date
+                const orderDate = new Date(order.orderDate);
+                const formattedOrderDate = orderDate.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                });
+                
+                ordersHtml += `
+                    <div class="order-card">
+                        <div class="order-header">
+                            <div>Order #${order.id}</div>
+                            <div class="order-date">${formattedOrderDate}</div>
+                        </div>
+                        <div class="order-items-mini">
+                            ${itemsHtml}
+                        </div>
+                        <div class="order-payment">
+                            <div class="payment-method">Payment: Completed</div>
+                            <div class="currency">USD</div>
+                        </div>
+                        <div class="order-tracking">
+                            <div class="tracking-number">Status: ${order.status}</div>
+                            <div class="delivery-date">Total: ${currencySymbol}${parseFloat(order.totalAmount).toFixed(2)}</div>
+                        </div>
+                        <div class="order-footer">
+                            <div class="order-status ${order.status.toLowerCase().replace(' ', '-')}">${order.status}</div>
+                        </div>
+                        <div class="order-actions">
+                            <button class="btn btn-outline" onclick="viewOrderDetails('${order.id}')">View Details</button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            orderHistory.innerHTML = ordersHtml;
+        }
+        
+        // View order details
+        function viewOrderDetails(orderId) {
+            alert(`Viewing details for order #${orderId}`);
+        }
+        
+        // Run when DOM is loaded
+        document.addEventListener('DOMContentLoaded', loadOrderHistory);
+    </script>
+</body>
+</html>

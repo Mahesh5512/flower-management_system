@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Order Display</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Test Order Display</h1>
+        <div id="orderDetails">
+            <!-- Order details will be loaded here dynamically -->
+        </div>
+    </div>
+
+    <script src="utils.js"></script>
+    <script>
+        // Test order data
+        const testOrder = {
+            id: "ORD-00000010",
+            userId: 1,
+            items: [
+                {
+                    id: 1,
+                    name: "Red Roses",
+                    price: 2489.17,
+                    image: "🌹",
+                    quantity: 2
+                }
+            ],
+            total: "₹4968.34",
+            currency: "INR",
+            paymentMethod: "PhonePe",
+            paymentDetails: "PhonePe: 9876543210",
+            date: "11/20/2025, 8:02:15 PM",
+            status: "processing",
+            deliveryDate: "Monday, November 24, 2025"
+        };
+
+        // Save test order to localStorage
+        localStorage.setItem('lastOrder', JSON.stringify(testOrder));
+
+        // Function to display order details
+        function displayOrderDetails() {
+            const order = JSON.parse(localStorage.getItem('lastOrder'));
+            const orderDetails = document.getElementById('orderDetails');
+            
+            if (!order) {
+                orderDetails.innerHTML = '<p>No order details found.</p>';
+                return;
+            }
+            
+            // Determine currency symbol
+            const currencySymbol = '₹';
+            
+            let itemsHtml = '';
+            order.items.forEach(item => {
+                // Convert price to INR if needed
+                let price = item.price;
+                if (order.currency === 'INR') {
+                    price = (price * 83).toFixed(2);
+                }
+                
+                const itemTotal = price * item.quantity;
+                // Use a flower icon instead of images
+                const flowerIcon = getFlowerIcon(item.category || "default");
+                itemsHtml += `
+                    <div class="order-item">
+                        <div class="item-info">
+                            <div class="item-image">
+                                <i class="${flowerIcon}" style="font-size: 30px; color: #e91e63;"></i>
+                            </div>
+                            <div>
+                                <h4>${item.name}</h4>
+                                <p>Quantity: ${item.quantity}</p>
+                            </div>
+                        </div>
+                        <div class="item-price">₹${parseFloat(itemTotal).toFixed(2)}</div>
+                    </div>
+                `;
+            });
+            
+            orderDetails.innerHTML = `
+                <h3>Order #${order.id}</h3>
+                <p><strong>Date:</strong> ${formatDateTime(order.date)}</p>
+                <p><strong>Status:</strong> ${order.status}</p>
+                <p><strong>Payment Method:</strong> ${order.paymentMethod}</p>
+                ${order.paymentDetails ? `<p><strong>Payment Details:</strong> ${order.paymentDetails}</p>` : ''}
+                <p><strong>Currency:</strong> Indian Rupees (₹)</p>
+                
+                <div class="order-items">
+                    ${itemsHtml}
+                </div>
+                
+                <div class="order-total">
+                    <strong>Total: ${order.total}</strong>
+                </div>
+            `;
+        }
+
+        // Function to get appropriate flower icon based on category
+        function getFlowerIcon(category) {
+            const iconMap = {
+                "Rose": "fas fa-rose",
+                "Tulip": "fas fa-seedling",
+                "Sunflower": "fas fa-sun",
+                "Lily": "fas fa-feather-alt",
+                "Orchid": "fas fa-wind",
+                "Daisy": "fas fa-leaf",
+                "Carnation": "fas fa-pagelines",
+                "Peony": "fas fa-spa",
+                "Hydrangea": "fas fa-cloud",
+                "Daffodil": "fas fa-star",
+                "Chrysanthemum": "fas fa-asterisk",
+                "Poppy": "fas fa-apple-alt",
+                "Lavender": "fas fa-air-freshener",
+                "Jasmine": "fas fa-moon",
+                "Gardenia": "fas fa-circle",
+                "Camellia": "fas fa-dot-circle",
+                "Azalea": "fas fa-ring",
+                "Begonia": "fas fa-heart",
+                "Marigold": "fas fa-fire",
+                "Zinnia": "fas fa-splotch",
+                "Cosmos": "fas fa-meteor",
+                "Snapdragon": "fas fa-sort-up",
+                "Foxglove": "fas fa-hand-point-up",
+                "Delphinium": "fas fa-water",
+                "Lisianthus": "fas fa-mountain",
+                "Freesia": "fas fa-wind",
+                "Gladiolus": "fas fa-sword",
+                "Alstroemeria": "fas fa-archway",
+                "Statice": "fas fa-anchor",
+                "Limonium": "fas fa-lemon",
+                "Eucalyptus": "fas fa-tree",
+                "Ranunculus": "fas fa-radiation",
+                "Anemone": "fas fa-wind",
+                "Sweet Pea": "fas fa-peapod",
+                "Stock": "fas fa-align-center",
+                "Celosia": "fas fa-feather",
+                "Buddleia": "fas fa-bug",
+                "Heather": "fas fa-mound",
+                "Protea": "fas fa-egg",
+                "Bird of Paradise": "fas fa-dove",
+                "Calla Lily": "fas fa-shoe-prints",
+                "Gerbera Daisy": "fas fa-dizzy",
+                "Cherry Blossom": "fas fa-chess-pawn",
+                "Magnolia": "fas fa-medal",
+                "Hibiscus": "fas fa-hockey-puck",
+                "default": "fas fa-seedling"
+            };
+            
+            // Return specific icon or default
+            return iconMap[category] || iconMap.default;
+        }
+
+        // Run when DOM is loaded
+        document.addEventListener('DOMContentLoaded', displayOrderDetails);
+    </script>
+</body>
+</html>

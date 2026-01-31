@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Confirmation - BloomFlowers</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- jsPDF for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1 class="logo">BloomFlowers</h1>
+            <nav>
+                <ul>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="products.html">Products</a></li>
+                    <li><a href="about.html">About</a></li>
+                    <li><a href="contact.html">Contact</a></li>
+                </ul>
+            </nav>
+            <div class="auth-buttons">
+                <button id="dashboardBtn" class="btn">Dashboard</button>
+                <button id="logoutBtn" class="btn">Logout</button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section class="confirmation-page">
+            <div class="container">
+                <div class="confirmation-content">
+                    <div class="confirmation-icon">✓</div>
+                    <h2>Order Confirmed!</h2>
+                    <p>Thank you for your purchase. Your order has been received and is being processed.</p>
+                    
+                    <div class="order-details" id="orderDetails">
+                        <!-- Order details will be loaded here dynamically -->
+                    </div>
+                    
+                    <div class="tracking-info">
+                        <h3>Order Information</h3>
+                        <p>Your Order ID: <strong id="orderId">ORD-00000000</strong></p>
+                        <p>Estimated delivery date: <strong id="deliveryDate">Processing</strong></p>
+                    </div>
+                    
+                    <div class="confirmation-actions">
+                        <button id="continueShoppingBtn" class="btn">Continue Shopping</button>
+                        <button id="viewOrdersBtn" class="btn btn-primary">View My Orders</button>
+                        <button id="trackOrderBtn" class="btn btn-outline">Track This Order</button>
+                        <button id="downloadPdfBtn" class="btn btn-primary">Download Order PDF</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 BloomFlowers. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="utils.js"></script>
+    <script>
+        // Check if user is logged in
+        function checkLoginStatus() {
+            const user = localStorage.getItem('currentUser');
+            
+            if (!user) {
+                // Redirect to home page if not logged in
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            // Add event listeners
+            document.getElementById('dashboardBtn').addEventListener('click', () => {
+                window.location.href = 'dashboard.html';
+            });
+            
+            document.getElementById('logoutBtn').addEventListener('click', function() {
+                localStorage.removeItem('currentUser');
+                window.location.href = 'index.html';
+            });
+            
+            document.getElementById('continueShoppingBtn').addEventListener('click', () => {
+                window.location.href = 'products.html';
+            });
+            
+            document.getElementById('viewOrdersBtn').addEventListener('click', () => {
+                window.location.href = 'dashboard.html';
+            });
+            
+            document.getElementById('trackOrderBtn').addEventListener('click', () => {
+                // Get the order ID from the last order
+                const order = JSON.parse(localStorage.getItem('lastOrder'));
+                if (order) {
+                    // Store the order ID to track
+                    localStorage.setItem('trackOrderId', order.id);
+                    window.location.href = 'track-order.html';
+                }
+            });
+            
+            // Add event listener for PDF download
+            document.getElementById('downloadPdfBtn').addEventListener('click', downloadOrderPDF);
+            
+            // Load order details
+            loadOrderDetails();
+        }
+        
+        // Load order details
+        function loadOrderDetails() {
+            const order = JSON.parse(localStorage.getItem('lastOrder'));
+            const orderDetails = document.getElementById('orderDetails');
+            
+            if (!order) {
+                orderDetails.innerHTML = '<p>No order details found.</p>';
+                return;
+            }
+            
+            // Determine currency symbol
+            const currencySymbol = '₹';
+            
+            let itemsHtml = '';
+            order.items.forEach(item => {
+                // Convert price to INR if needed
+                let price = item.price;
+                if (order.currency === 'INR') {
+                    price = (price * 83).toFixed(2);
+                }
+                
+                const itemTotal = price * item.quantity;
+                // Use a flower icon instead of images
+                const flowerIcon = getFlowerIcon(item.category || "default");
+                itemsHtml += `
+                    <div class="order-item">
+                        <div class="item-info">
+                            <div class="item-image">
+                                <i class="${flowerIcon}" style="font-size: 30px; color: #e91e63;"></i>
+                            </div>
+                            <div>
+                                <h4>${item.name}</h4>
+                                <p>Quantity: ${item.quantity}</p>
+                            </div>
+                        </div>
+                        <div class="item-price">₹${parseFloat(itemTotal).toFixed(2)}</div>
+                    </div>
+                `;
+            });
+            
+            orderDetails.innerHTML = `
+                <h3>Order #${order.id}</h3>
+                <p><strong>Date:</strong> ${formatDateTime(order.date)}</p>
+                <p><strong>Status:</strong> ${order.status}</p>
+                <p><strong>Payment Method:</strong> ${order.paymentMethod}</p>
+                ${order.paymentDetails ? `<p><strong>Payment Details:</strong> ${order.paymentDetails}</p>` : ''}
+                <p><strong>Currency:</strong> Indian Rupees (₹)</p>
+                
+                <div class="order-items">
+                    ${itemsHtml}
+                </div>
+                
+                <div class="order-total">
+                    <strong>Total: ${order.total}</strong>
+                </div>
+            `;
+            
+            // Update order info
+            document.getElementById('orderId').textContent = order.id;
+            document.getElementById('deliveryDate').textContent = order.deliveryDate;
+        }
+        
+        // Download order as PDF
+        async function downloadOrderPDF() {
+            const order = JSON.parse(localStorage.getItem('lastOrder'));
+            if (!order) {
+                alert('No order found');
+                return;
+            }
+            
+            // Check if jsPDF is available
+            if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') {
+                alert('PDF generation library not loaded. Please try again.');
+                return;
+            }
+            
+            try {
+                // Create PDF using jsPDF
+                const doc = new window.jspdf.jsPDF();
+                
+                // Add title
+                doc.setFontSize(20);
+                doc.text('BLOOMFLOWERS ORDER CONFIRMATION', 105, 20, null, null, 'center');
+                
+                // Add order details
+                doc.setFontSize(12);
+                doc.text(`Order ID: ${order.id}`, 20, 40);
+                doc.text(`Order Date: ${formatDateTime(order.date)}`, 20, 50);
+                doc.text(`Status: ${order.status}`, 20, 60);
+                
+                // Add customer details
+                doc.setFontSize(14);
+                doc.text('CUSTOMER DETAILS', 20, 80);
+                doc.setFontSize(12);
+                doc.text(`Name: ${order.userName}`, 20, 90);
+                doc.text(`Email: ${order.userEmail}`, 20, 100);
+                
+                // Add shipping address
+                doc.setFontSize(14);
+                doc.text('SHIPPING ADDRESS', 20, 120);
+                doc.setFontSize(12);
+                // Parse shipping address if it's a string
+                let shippingAddress = order.shippingAddress;
+                if (typeof shippingAddress === 'string') {
+                    try {
+                        shippingAddress = JSON.parse(shippingAddress);
+                    } catch (e) {
+                        // If parsing fails, use as is
+                        shippingAddress = { firstName: '', lastName: '', address: '', city: '', zipCode: '' };
+                    }
+                }
+                doc.text(`${shippingAddress.firstName} ${shippingAddress.lastName}`, 20, 130);
+                doc.text(`${shippingAddress.address}`, 20, 140);
+                doc.text(`${shippingAddress.city}, ${shippingAddress.zipCode}`, 20, 150);
+                
+                // Add order items
+                doc.setFontSize(14);
+                doc.text('ORDER ITEMS', 20, 170);
+                doc.setFontSize(12);
+                
+                let yPos = 180;
+                order.items.forEach(item => {
+                    const itemTotal = item.price * item.quantity;
+                    doc.text(`${item.productName} x${item.quantity} - ₹${itemTotal.toFixed(2)}`, 20, yPos);
+                    yPos += 10;
+                });
+                
+                // Add payment details
+                doc.setFontSize(14);
+                doc.text('PAYMENT DETAILS', 20, yPos + 10);
+                doc.setFontSize(12);
+                doc.text(`Payment Method: ${order.paymentMethod}`, 20, yPos + 20);
+                if (order.paymentDetails) {
+                    doc.text(`${order.paymentDetails}`, 20, yPos + 30);
+                }
+                
+                // Add total amount
+                doc.setFontSize(16);
+                doc.text(`TOTAL AMOUNT: ${order.total}`, 20, yPos + 50);
+                
+                // Add thank you message
+                doc.setFontSize(14);
+                doc.text('Thank you for shopping with BloomFlowers!', 105, yPos + 70, null, null, 'center');
+                
+                // Save the PDF
+                doc.save(`order-${order.id}.pdf`);
+            } catch (error) {
+                console.error('Error generating PDF:', error);
+                alert('Error generating PDF. Please try again.');
+            }
+        }
+        
+        // Function to get appropriate flower icon based on category
+        function getFlowerIcon(category) {
+            const iconMap = {
+                "Rose": "fas fa-rose",
+                "Tulip": "fas fa-seedling",
+                "Sunflower": "fas fa-sun",
+                "Lily": "fas fa-feather-alt",
+                "Orchid": "fas fa-wind",
+                "Daisy": "fas fa-leaf",
+                "Carnation": "fas fa-pagelines",
+                "Peony": "fas fa-spa",
+                "Hydrangea": "fas fa-cloud",
+                "Daffodil": "fas fa-star",
+                "Chrysanthemum": "fas fa-asterisk",
+                "Poppy": "fas fa-apple-alt",
+                "Lavender": "fas fa-air-freshener",
+                "Jasmine": "fas fa-moon",
+                "Gardenia": "fas fa-circle",
+                "Camellia": "fas fa-dot-circle",
+                "Azalea": "fas fa-ring",
+                "Begonia": "fas fa-heart",
+                "Marigold": "fas fa-fire",
+                "Zinnia": "fas fa-splotch",
+                "Cosmos": "fas fa-meteor",
+                "Snapdragon": "fas fa-sort-up",
+                "Foxglove": "fas fa-hand-point-up",
+                "Delphinium": "fas fa-water",
+                "Lisianthus": "fas fa-mountain",
+                "Freesia": "fas fa-wind",
+                "Gladiolus": "fas fa-sword",
+                "Alstroemeria": "fas fa-archway",
+                "Statice": "fas fa-anchor",
+                "Limonium": "fas fa-lemon",
+                "Eucalyptus": "fas fa-tree",
+                "Ranunculus": "fas fa-radiation",
+                "Anemone": "fas fa-wind",
+                "Sweet Pea": "fas fa-peapod",
+                "Stock": "fas fa-align-center",
+                "Celosia": "fas fa-feather",
+                "Buddleia": "fas fa-bug",
+                "Heather": "fas fa-mound",
+                "Protea": "fas fa-egg",
+                "Bird of Paradise": "fas fa-dove",
+                "Calla Lily": "fas fa-shoe-prints",
+                "Gerbera Daisy": "fas fa-dizzy",
+                "Cherry Blossom": "fas fa-chess-pawn",
+                "Magnolia": "fas fa-medal",
+                "Hibiscus": "fas fa-hockey-puck",
+                "default": "fas fa-seedling"
+            };
+            
+            // Return specific icon or default
+            return iconMap[category] || iconMap.default;
+        }
+        
+        // Update order with tracking information
+        function updateOrderWithTracking(orderId, trackingNumber, deliveryDate) {
+            const orders = JSON.parse(localStorage.getItem('orders')) || [];
+            const orderIndex = orders.findIndex(order => order.id == orderId);
+            
+            if (orderIndex !== -1) {
+                orders[orderIndex].trackingNumber = trackingNumber;
+                orders[orderIndex].deliveryDate = deliveryDate;
+                orders[orderIndex].orderStatusTimeline = generateOrderStatusTimeline();
+                
+                localStorage.setItem('orders', JSON.stringify(orders));
+                
+                // Also update lastOrder
+                const lastOrder = JSON.parse(localStorage.getItem('lastOrder'));
+                if (lastOrder && lastOrder.id == orderId) {
+                    lastOrder.trackingNumber = trackingNumber;
+                    lastOrder.deliveryDate = deliveryDate;
+                    lastOrder.orderStatusTimeline = orders[orderIndex].orderStatusTimeline;
+                    localStorage.setItem('lastOrder', JSON.stringify(lastOrder));
+                }
+            }
+        }
+        
+        // Run when DOM is loaded
+        document.addEventListener('DOMContentLoaded', checkLoginStatus);
+    </script>
+</body>
+</html>
